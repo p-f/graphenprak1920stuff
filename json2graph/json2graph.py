@@ -40,7 +40,7 @@ def json2graph(inpath, outpath, remove_atoms=[]):
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--filter-atom", help="Filtered atom types (comma "
-                                             "reparated)", default="")
+                                                "separated)", default="")
     ap.add_argument("-i", "--input", help="Input file", required=True)
     ap.add_argument("-o", "--output", help="Output file", required=True)
     args = ap.parse_args()
