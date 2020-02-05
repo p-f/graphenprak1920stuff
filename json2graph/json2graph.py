@@ -35,10 +35,10 @@ def json2graph(inpath, outpath, remove_atoms=[]):
     outfile.write("Directed graph;False\n")
     outfile.write("\n")
     for vertex in vertices:
-        outfile.write(";".join(vertices) + "\n")
+        outfile.write(";".join(vertex) + "\n")
     outfile.write("\n")
     for edge in edges:
-        outfile.write(";".join(edges) + "\n")
+        outfile.write(";".join(edge) + "\n")
     outfile.close()
 
 
