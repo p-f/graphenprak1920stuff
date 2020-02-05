@@ -2,7 +2,7 @@ import argparse
 import json
 
 
-def json2graph(inpath, outpath, remove_atoms=[]):
+def json2graph(inpath, outpath, remove_atoms=[], author=None):
     file = open(inpath, "r")
     parsed = json.load(file)
     file.close()
@@ -27,7 +27,8 @@ def json2graph(inpath, outpath, remove_atoms=[]):
             continue
         edges += [(source_id, target_id, str(bonds["order"][bond]))]
     outfile = open(outpath, "w")
-    outfile.write("AUTHOR: Egal.\n")
+    if author:
+        outfile.write("AUTHOR: " + author + "\n")
     outfile.write("#nodes;" + str(len(vertices)) + "\n")
     outfile.write("#edges;" + str(len(edges)) + "\n")
     outfile.write("Nodes labelled;True\n")
@@ -48,5 +49,12 @@ if __name__ == '__main__':
                                                 "separated)", default="")
     ap.add_argument("-i", "--input", help="Input file", required=True)
     ap.add_argument("-o", "--output", help="Output file", required=True)
+    ap.add_argument("-a", "--author", help="Author", default="Egal.",
+                    required=False)
+    ap.add_argument("-A", "--no-author", help="Do not write the author.",
+                    action="store_true")
     args = ap.parse_args()
-    json2graph(args.input, args.output, args.filter_atom.split(","))
+    new_author = args.author
+    if args.no_author:
+        new_author = None
+    json2graph(args.input, args.output, args.filter_atom.split(","), new_author)
