@@ -3,6 +3,36 @@ import json
 
 
 def json2graph(inpath, outpath, remove_atoms=[], author=None):
+    vertices, edges = read_graph(inpath)
+    vertices, edges = induced_subgraph(
+        filter(lambda x: x[1] in remove_atoms, vertices), edges)
+    write_graph(vertices, edges, outpath, author)
+
+
+def induced_subgraph(vertices, edges):
+    """
+    Returns an induced subgraph from a set of vertices and edges. This will
+    effectively remove dangling edges.
+
+    :param vertices: The vertex set.
+    :param edges: The edge set.
+    :return: The induced subgraph.
+    """
+    vertex_ids = sorted(map(lambda x: x[0], vertices))
+    result_edges = list(filter(
+        lambda x: (x[1] in vertex_ids and x[2] in vertex_ids), edges))
+    return vertices, result_edges
+
+
+def read_graph(inpath):
+    """
+    Read a graph from a file in JSON format. This lists of vertices and edges
+    as tuples. Vertices are encoded as tuples of (id, label) and edges as
+    tuples of (source_id, target_id, label).
+
+    :param inpath: The JSON file input path.
+    :return: A graph as tuple of vertex- and edge-list.
+    """
     file = open(inpath, "r")
     parsed = json.load(file)
     file.close()
@@ -10,32 +40,40 @@ def json2graph(inpath, outpath, remove_atoms=[], author=None):
     bonds = parsed["PC_Compounds"][0]["bonds"]
     nr_of_atoms = len(compound["aid"])
     nr_of_bonds = len(bonds["aid1"])
-    removed_atom_ids = []
     vertices = []
     edges = []
     for atom in range(nr_of_atoms):
         atom_type = str(compound["element"][atom])
         atom_id = str(compound["aid"][atom])
-        if atom_type in remove_atoms:
-            removed_atom_ids += [atom_id]
-            continue
         vertices += [(atom_id, atom_type)]
     for bond in range(nr_of_bonds):
         source_id = str(bonds["aid1"][bond])
         target_id = str(bonds["aid2"][bond])
-        if source_id in removed_atom_ids or target_id in removed_atom_ids:
-            continue
         edges += [(source_id, target_id, str(bonds["order"][bond]))]
+    return vertices, edges
+
+
+def write_graph(nodes, edges, outpath, author=None):
+    """
+    Writes a graph in the format used by read_graph (as lists of tuples)
+    as the custom .graph format used by the other tools in the Praktikum.
+
+    :param nodes: The list of vertex-tuples.
+    :param edges: The list of edge-tuples.
+    :param outpath: The path of the output .graph file.
+    :param author: The value of the author field in the output file (optional).
+    :return: nothing.
+    """
     outfile = open(outpath, "w")
     if author:
         outfile.write("AUTHOR: " + author + "\n")
-    outfile.write("#nodes;" + str(len(vertices)) + "\n")
+    outfile.write("#nodes;" + str(len(nodes)) + "\n")
     outfile.write("#edges;" + str(len(edges)) + "\n")
     outfile.write("Nodes labelled;True\n")
     outfile.write("Edges labelled;True\n")
     outfile.write("Directed graph;False\n")
     outfile.write("\n")
-    for vertex in vertices:
+    for vertex in nodes:
         outfile.write(";".join(vertex) + "\n")
     outfile.write("\n")
     for edge in edges:
