@@ -19,16 +19,17 @@ def get_neighbors_of(vertices, edges, vertex):
     :param vertex: The vertex to get neighbors of.
     :return: The neighbors of the vertex and the corresponding edge label.
     """
-    id = vertex[0]
+
+    vid = vertex[0]
     edges_min = list(map(lambda x: (x[0], x[1]), edges))
-    neighbors = filter(lambda x: ((x[0], id) in edges_min or
-                                 (id, x[0] in edges_min)), vertices)
+    neighbors = filter(lambda x: ((x[0], vid) in edges_min or
+                                  (vid, x[0] in edges_min)), vertices)
     res = []
     for neighbor in neighbors:
         n_id = neighbor[0]
         for connecting in [e for e in edges if
-                           (e[0] == id and e[1] == n_id) or
-                           (e[0] == n_id and e[1] == id)]:
+                           (e[0] == vid and e[1] == n_id) or
+                           (e[0] == n_id and e[1] == vid)]:
             res += [(neighbor, connecting[2])]
     return res
 
@@ -42,10 +43,11 @@ def induced_subgraph(vertices, edges):
     :param edges: The edge set.
     :return: The induced subgraph.
     """
-    vertex_ids = sorted(map(lambda x: x[0], vertices))
+    new_vertices = vertices if isinstance(vertices, list) else list(vertices)
+    vertex_ids = sorted(map(lambda x: x[0], new_vertices))
     result_edges = list(filter(
         lambda x: (x[0] in vertex_ids and x[1] in vertex_ids), edges))
-    return vertices, result_edges
+    return new_vertices, result_edges
 
 
 def read_graph(inpath):
