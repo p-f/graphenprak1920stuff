@@ -5,7 +5,7 @@ import json
 def json2graph(inpath, outpath, remove_atoms=[], author=None):
     vertices, edges = read_graph(inpath)
     vertices, edges = induced_subgraph(
-        filter(lambda x: x[1] in remove_atoms, vertices), edges)
+        filter(lambda x: x[1] not in remove_atoms, vertices), edges)
     write_graph(vertices, edges, outpath, author)
 
 
@@ -20,7 +20,7 @@ def induced_subgraph(vertices, edges):
     """
     vertex_ids = sorted(map(lambda x: x[0], vertices))
     result_edges = list(filter(
-        lambda x: (x[1] in vertex_ids and x[2] in vertex_ids), edges))
+        lambda x: (x[0] in vertex_ids and x[1] in vertex_ids), edges))
     return vertices, result_edges
 
 
