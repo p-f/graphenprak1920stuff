@@ -9,6 +9,30 @@ def json2graph(inpath, outpath, remove_atoms=[], author=None):
     write_graph(vertices, edges, outpath, author)
 
 
+def get_neighbors_of(vertices, edges, vertex):
+    """
+    Get the neighbors of a vertex in the form of
+    (neighbor_vertex, edge_label)
+
+    :param vertices: The vertex set of the graph.
+    :param edges: The edge set of the graph.
+    :param vertex: The vertex to get neighbors of.
+    :return: The neighbors of the vertex and the corresponding edge label.
+    """
+    id = vertex[0]
+    edges_min = list(map(lambda x: (x[0], x[1]), edges))
+    neighbors = filter(lambda x: ((x[0], id) in edges_min or
+                                 (id, x[0] in edges_min)), vertices)
+    res = []
+    for neighbor in neighbors:
+        n_id = neighbor[0]
+        for connecting in [e for e in edges if
+                           (e[0] == id and e[1] == n_id) or
+                           (e[0] == n_id and e[1] == id)]:
+            res += [(neighbor, connecting[2])]
+    return res
+
+
 def induced_subgraph(vertices, edges):
     """
     Returns an induced subgraph from a set of vertices and edges. This will
