@@ -2,52 +2,104 @@ import argparse
 import json
 
 
+class Graph:
+    """
+    A graph storing lists of labeled vertices and edges
+    """
+
+    def __init__(self):
+        """
+        Create a new empty graph
+        """
+        self.vertices = []
+        self.edges = []
+
+    def __init__(self, vertices, edges):
+        """
+        Create a new graph from lists of vertices and edges.
+
+        :param vertices: A list of vertices.
+        :param edges: A list of edges.
+        """
+        self.vertices = vertices
+        self.edges = edges
+
+    def get_neighbors_of(self, vertex):
+        """
+        Get the neighbors of a vertex in the form of
+        (neighbor_vertex, edge_label)
+
+        :param vertex: The vertex to get neighbors of.
+        :return: The neighbors of the vertex and the corresponding edge label.
+        """
+        vid = vertex[0]
+        edges_min = list(map(lambda x: (x[0], x[1]), self.edges))
+        neighbors = filter(lambda x: ((x[0], vid) in edges_min or
+                                      (vid, x[0] in edges_min)), self.vertices)
+        res = []
+        for neighbor in neighbors:
+            n_id = neighbor[0]
+            for connecting in [e for e in self.edges if
+                               (e[0] == vid and e[1] == n_id) or
+                               (e[0] == n_id and e[1] == vid)]:
+                res += [(neighbor, connecting[2])]
+        return res
+
+    def filter_vertices(self, vertex_filter):
+        """
+        Apply a filter to the list of vertices.
+
+        :param vertex_filter: The vertex filter.
+        :return: The subgraph.
+        """
+        self.vertices = list(filter(vertex_filter, self.vertices))
+        return self.induced_subgraph()
+
+    def induced_subgraph(self):
+        """
+        Returns an induced subgraph from a set of vertices and edges. This will
+        effectively remove dangling edges.
+
+        :param vertices: The vertex set.
+        :param edges: The edge set.
+        :return: The induced subgraph.
+        """
+        vertex_ids = sorted(map(lambda x: x[0], self.vertices))
+        result_edges = list(filter(
+            lambda x: (x[0] in vertex_ids and x[1] in vertex_ids), self.edges))
+        self.edges = result_edges
+        return self
+
+    def write(self, outpath, author=None):
+        """
+        Writes the graph in the format used by read_graph (as lists of tuples)
+        as the custom .graph format used by the other tools in the Praktikum.
+
+        :param outpath: The path of the output .graph file.
+        :param author: The value of the author field in the output file
+        (optional).
+        """
+        outfile = open(outpath, "w")
+        if author:
+            outfile.write("AUTHOR: " + author + "\n")
+        outfile.write("#nodes;" + str(len(self.vertices)) + "\n")
+        outfile.write("#edges;" + str(len(self.edges)) + "\n")
+        outfile.write("Nodes labelled;True\n")
+        outfile.write("Edges labelled;True\n")
+        outfile.write("Directed graph;False\n")
+        outfile.write("\n")
+        for vertex in self.vertices:
+            outfile.write(";".join(vertex) + "\n")
+        outfile.write("\n")
+        for edge in self.edges:
+            outfile.write(";".join(edge) + "\n")
+        outfile.close()
+
+
 def json2graph(inpath, outpath, remove_atoms=[], author=None):
-    vertices, edges = read_graph(inpath)
-    vertices, edges = induced_subgraph(
-        filter(lambda x: x[1] not in remove_atoms, vertices), edges)
-    write_graph(vertices, edges, outpath, author)
-
-
-def get_neighbors_of(vertices, edges, vertex):
-    """
-    Get the neighbors of a vertex in the form of
-    (neighbor_vertex, edge_label)
-
-    :param vertices: The vertex set of the graph.
-    :param edges: The edge set of the graph.
-    :param vertex: The vertex to get neighbors of.
-    :return: The neighbors of the vertex and the corresponding edge label.
-    """
-
-    vid = vertex[0]
-    edges_min = list(map(lambda x: (x[0], x[1]), edges))
-    neighbors = filter(lambda x: ((x[0], vid) in edges_min or
-                                  (vid, x[0] in edges_min)), vertices)
-    res = []
-    for neighbor in neighbors:
-        n_id = neighbor[0]
-        for connecting in [e for e in edges if
-                           (e[0] == vid and e[1] == n_id) or
-                           (e[0] == n_id and e[1] == vid)]:
-            res += [(neighbor, connecting[2])]
-    return res
-
-
-def induced_subgraph(vertices, edges):
-    """
-    Returns an induced subgraph from a set of vertices and edges. This will
-    effectively remove dangling edges.
-
-    :param vertices: The vertex set.
-    :param edges: The edge set.
-    :return: The induced subgraph.
-    """
-    new_vertices = vertices if isinstance(vertices, list) else list(vertices)
-    vertex_ids = sorted(map(lambda x: x[0], new_vertices))
-    result_edges = list(filter(
-        lambda x: (x[0] in vertex_ids and x[1] in vertex_ids), edges))
-    return new_vertices, result_edges
+    read_graph(inpath) \
+        .filter_vertices(lambda x: x[1] not in remove_atoms) \
+        .write(outpath, author)
 
 
 def read_graph(inpath):
@@ -76,35 +128,7 @@ def read_graph(inpath):
         source_id = str(bonds["aid1"][bond])
         target_id = str(bonds["aid2"][bond])
         edges += [(source_id, target_id, str(bonds["order"][bond]))]
-    return vertices, edges
-
-
-def write_graph(nodes, edges, outpath, author=None):
-    """
-    Writes a graph in the format used by read_graph (as lists of tuples)
-    as the custom .graph format used by the other tools in the Praktikum.
-
-    :param nodes: The list of vertex-tuples.
-    :param edges: The list of edge-tuples.
-    :param outpath: The path of the output .graph file.
-    :param author: The value of the author field in the output file (optional).
-    :return: nothing.
-    """
-    outfile = open(outpath, "w")
-    if author:
-        outfile.write("AUTHOR: " + author + "\n")
-    outfile.write("#nodes;" + str(len(nodes)) + "\n")
-    outfile.write("#edges;" + str(len(edges)) + "\n")
-    outfile.write("Nodes labelled;True\n")
-    outfile.write("Edges labelled;True\n")
-    outfile.write("Directed graph;False\n")
-    outfile.write("\n")
-    for vertex in nodes:
-        outfile.write(";".join(vertex) + "\n")
-    outfile.write("\n")
-    for edge in edges:
-        outfile.write(";".join(edge) + "\n")
-    outfile.close()
+    return Graph(vertices, edges)
 
 
 if __name__ == '__main__':

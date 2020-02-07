@@ -28,7 +28,7 @@ class MyTestCase(unittest.TestCase):
             (out1, "cout1"),
             (out2, "cout2")
         ]
-        neighbors = j2g.get_neighbors_of(vertices, edges, center)
+        neighbors = j2g.Graph(vertices, edges).get_neighbors_of(center)
         self.assertListEqual(expected, neighbors)
 
 
@@ -51,9 +51,9 @@ class MyTestCase(unittest.TestCase):
         expected_edges = [
             ("1", "2", "a")
         ]
-        new_vertices, new_edges = j2g.induced_subgraph(vertices, edges)
-        self.assertListEqual(vertices, new_vertices)
-        self.assertListEqual(expected_edges, new_edges)
+        subgraph = j2g.Graph(vertices, edges).induced_subgraph()
+        self.assertListEqual(vertices, subgraph.vertices)
+        self.assertListEqual(expected_edges, subgraph.edges)
 
 
 if __name__ == '__main__':
