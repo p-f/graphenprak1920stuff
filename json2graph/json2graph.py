@@ -95,11 +95,15 @@ class Graph:
         :param author: The value of the author field in the output file
         (optional).
         """
+        vertex_count = str(len(self.vertices))
+        edges_count = str(len(self.edges))
+        print("Writing ", outpath, " with ", vertex_count, " vertices and ",
+              edges_count, " edges.")
         outfile = open(outpath, "w")
         if author:
             outfile.write("AUTHOR: " + author + "\n")
-        outfile.write("#nodes;" + str(len(self.vertices)) + "\n")
-        outfile.write("#edges;" + str(len(self.edges)) + "\n")
+        outfile.write("#nodes;" + vertex_count + "\n")
+        outfile.write("#edges;" + edges_count + "\n")
         outfile.write("Nodes labelled;True\n")
         outfile.write("Edges labelled;True\n")
         outfile.write("Directed graph;False\n")
