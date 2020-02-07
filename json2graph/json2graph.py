@@ -5,9 +5,19 @@ import json
 def json2graph(inpath, outpath, remove_atoms=[], author=None):
     vertices, edges = read_graph(inpath)
     vertices, edges = induced_subgraph(
-        filter(lambda x: x[1] not in remove_atoms, vertices), edges)
+        filter(lambda x: x[1] not in remove_atoms or (x[1] in remove_atoms and have_neighbors_multibonds(vertices, edges, x)), vertices), edges)
     write_graph(vertices, edges, outpath, author)
 
+#TODO
+def have_neighbors_multibonds(vertices, edges, vertex):
+    neighbors = list(get_neighbors_of(vertices, edges, vertex))
+    for neighbor in neighbors:
+        nneighbors = list(get_neighbors_of(vertices, edges, neighbor[0]))
+        for nneighbor in nneighbors:
+            if nneighbor[1] != "1":
+                return True
+    return False
+    #return len(neighbors) == sum(map(lambda y: int(y[1]), get_neighbors_of(vertices, edges, vertex)))
 
 def get_neighbors_of(vertices, edges, vertex):
     """
@@ -42,10 +52,11 @@ def induced_subgraph(vertices, edges):
     :param edges: The edge set.
     :return: The induced subgraph.
     """
-    vertex_ids = sorted(map(lambda x: x[0], vertices))
+    newvertices = vertices if isinstance(vertices, list) else list(vertices)
+    vertex_ids = sorted(map(lambda x: x[0], newvertices))
     result_edges = list(filter(
         lambda x: (x[0] in vertex_ids and x[1] in vertex_ids), edges))
-    return vertices, result_edges
+    return newvertices, result_edges
 
 
 def read_graph(inpath):
@@ -88,6 +99,8 @@ def write_graph(nodes, edges, outpath, author=None):
     :param author: The value of the author field in the output file (optional).
     :return: nothing.
     """
+    assert isinstance(nodes, list)
+    assert isinstance(edges, list)
     outfile = open(outpath, "w")
     if author:
         outfile.write("AUTHOR: " + author + "\n")
