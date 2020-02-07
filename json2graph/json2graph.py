@@ -24,6 +24,22 @@ class Graph:
         self.vertices = vertices
         self.edges = edges
 
+    def have_neighbors_multibonds(self, vertex):
+        """
+        Calculate whether any neighbor of a vertex has multibonds 
+        and return True in this case.
+        
+        :param vertex: The vertex to get neighbors of and search mfor multibonds
+        :return: True if any neighbor has at least 1 multibond, False otherwise.
+        """
+        neighbors = list(self.get_neighbors_of(vertex))
+        for neighbor in neighbors:
+            nneighbors = list(self.get_neighbors_of(neighbor[0]))
+            for nneighbor in nneighbors:
+                if nneighbor[1] != "1":
+                    return True
+        return False
+
     def get_neighbors_of(self, vertex):
         """
         Get the neighbors of a vertex in the form of
@@ -97,8 +113,8 @@ class Graph:
 
 
 def json2graph(inpath, outpath, remove_atoms=[], author=None):
-    read_graph(inpath) \
-        .filter_vertices(lambda x: x[1] not in remove_atoms) \
+    graph = read_graph(inpath)
+    graph.filter_vertices(lambda x: x[1] not in remove_atoms or (x[1] in remove_atoms and graph.have_neighbors_multibonds(x))) \
         .write(outpath, author)
 
 
