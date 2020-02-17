@@ -3,6 +3,37 @@ import json
 import os
 import sys
 
+from enum import Enum, unique
+
+@unique
+class Preprocessing(Enum):
+    """
+    An enum used to select preprocessing steps.
+    """
+    COMPRESS_CH3 = "COMPRESS_CH3"
+    REMOVE_H = "REMOVE_H"
+
+    @classmethod
+    def get(cls, name: str):
+        """
+        Get a Preprocessing value from its name.
+
+        :param name: The name.
+        :return: The enum value
+        """
+        for p in Preprocessing:
+            if name == p.value:
+                return p
+        raise Exception("Step not found: " + name)
+
+    @classmethod
+    def names(cls):
+        """
+        Get the names of all possible preprocessing steps.
+
+        :return: The preprocessing step names.
+        """
+        return ", ".join([p.value for p in Preprocessing])
 
 class Graph:
     """
@@ -63,6 +94,29 @@ class Graph:
                 res += [(neighbor, connecting[2])]
         return res
 
+    def compress_ch3(self):
+        """
+        Find CH_3 subgraphs and replace them with a single vertex.
+
+        :return: The graph with compressed CH_3 subgraphs.
+        """
+        to_remove = []
+        new_vertices = []
+        for vertex in self.vertices:
+            if vertex[1] != "6":
+                new_vertices += [vertex]
+                continue
+            neighbors = list(filter(lambda x: x[1] == "1",
+                                    map(lambda x: x[0],
+                                        self.get_neighbors_of(vertex))))
+            if len(neighbors) == 3:
+                to_remove += neighbors
+                new_vertices += [(vertex[0], "CH3")]
+            else:
+                new_vertices += [vertex]
+        return Graph(new_vertices, self.edges)\
+            .filter_vertices(lambda x: x not in to_remove)
+
     def filter_vertices(self, vertex_filter):
         """
         Apply a filter to the list of vertices.
@@ -116,6 +170,36 @@ class Graph:
         for edge in self.edges:
             outfile.write(";".join(edge) + "\n")
         outfile.close()
+
+    def preprocess(self, step: Preprocessing):
+        """
+        Run a preprocessing step.
+
+        :param step: The step.
+        :return: The processed graph.
+        """
+        remove_atoms = ["1"]
+        if step == Preprocessing.REMOVE_H:
+            return self.filter_vertices(
+                lambda x: x[1] not in remove_atoms or
+                          (x[1] in remove_atoms and
+                           self.have_neighbors_multibonds(x)))
+        elif step == Preprocessing.COMPRESS_CH3:
+            return self.compress_ch3()
+        else:
+            raise Exception("Unknown step: " + str(step))
+
+    def preprocessing(self, step_names: list):
+        """
+        Run preprocessing steps.
+
+        :param step_names: The steps (by name)
+        :return: The graph after preprocessing.
+        """
+        g = self
+        for step in step_names:
+            g = g.preprocess(Preprocessing.get(step))
+        return g
 
     @classmethod
     def read_graph(cls, in_path: str, in_format="auto"):
@@ -231,12 +315,11 @@ class Graph:
         return Graph(vertices, edges)
 
 
-def json2graph(inpath: str, outpath: str, informat: str,
-               remove_atoms=[], author=None):
+def json2graph(inpath: str, outpath: str, informat: str, author=None,
+               preprocess = []):
     print("Converting ", inpath, "to", outpath)
     graph = Graph.read_graph(inpath, informat)
-    graph.filter_vertices(lambda x: x[1] not in remove_atoms or (x[1] in remove_atoms and graph.have_neighbors_multibonds(x))) \
-        .write(outpath, author)
+    graph.preprocessing(preprocess).write(outpath, author)
 
 
 if __name__ == '__main__':
@@ -252,6 +335,9 @@ if __name__ == '__main__':
                     required=False)
     ap.add_argument("-A", "--no-author", help="Do not write the author.",
                     action="store_true")
+    ap.add_argument("-P", "--preprocess", nargs="+", metavar="STEP",
+                    help="Run a preprocessing step ("
+                         + Preprocessing.names() + ")")
     ap.add_argument("input", metavar="INFILE", nargs="+", help="Input file(s)")
     args = ap.parse_args()
     new_author = args.author
@@ -275,11 +361,11 @@ if __name__ == '__main__':
             if os.path.exists(next_outfile):
                 sys.stderr.write("Error: File already exists: " + next_outfile)
                 continue
-            json2graph(infile, next_outfile, args.format, filter_atoms,
-                       new_author)
+            json2graph(infile, next_outfile, args.format,
+                       new_author, args.preprocess)
     elif len(infiles) == 0:
         sys.stderr.write("Error: No input files.\n")
     elif len(infiles) == 1:
         assert args.output, "No output file given. [-o]"
-        json2graph(infiles[0], args.output, args.format,
-                   filter_atoms, new_author)
+        json2graph(infiles[0], args.output, args.format, new_author,
+                   args.preprocess)
