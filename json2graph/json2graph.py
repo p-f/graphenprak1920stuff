@@ -1,7 +1,7 @@
 import argparse
 import json
-
-from enum import Enum
+import os
+import sys
 
 
 class Graph:
@@ -233,6 +233,7 @@ class Graph:
 
 def json2graph(inpath: str, outpath: str, informat: str,
                remove_atoms=[], author=None):
+    print("Converting ", inpath, "to", outpath)
     graph = Graph.read_graph(inpath, informat)
     graph.filter_vertices(lambda x: x[1] not in remove_atoms or (x[1] in remove_atoms and graph.have_neighbors_multibonds(x))) \
         .write(outpath, author)
@@ -242,17 +243,43 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--filter-atom", help="Filtered atom types (comma "
                                                 "separated)", default="")
-    ap.add_argument("-i", "--input", help="Input file", required=True)
-    ap.add_argument("-o", "--output", help="Output file", required=True)
+    ap_out_selection = ap.add_mutually_exclusive_group(required=True)
+    ap_out_selection.add_argument("-o", "--output", help="Output file")
+    ap_out_selection.add_argument("-O", "--outpath", help="Output path")
     ap.add_argument("-l", "--format", help="Input format (json, graph, auto)",
                     default="auto")
     ap.add_argument("-a", "--author", help="Author", default="Egal.",
                     required=False)
     ap.add_argument("-A", "--no-author", help="Do not write the author.",
                     action="store_true")
+    ap.add_argument("input", metavar="INFILE", nargs="+", help="Input file(s)")
     args = ap.parse_args()
     new_author = args.author
     if args.no_author:
         new_author = None
     filter_atoms = args.filter_atom.split(",")
-    json2graph(args.input, args.output, args.format, filter_atoms, new_author)
+    infiles = args.input
+    if len(infiles) > 1 or args.outpath:
+        if args.output:
+            sys.stderr.write("Please use -O when converting multiple input "
+                             "files\n")
+            exit(1)
+        assert args.outpath, "Output path not set. [-O]"
+        outpath = args.outpath
+        if not os.path.exists(outpath):
+            sys.stderr.write("Warning: Output path does not exist\n")
+            os.mkdir(outpath)
+        for infile in infiles:
+            next_outfile = os.path.join(outpath,
+                                        os.path.basename(infile) + ".graph")
+            if os.path.exists(next_outfile):
+                sys.stderr.write("Error: File already exists: " + next_outfile)
+                continue
+            json2graph(infile, next_outfile, args.format, filter_atoms,
+                       new_author)
+    elif len(infiles) == 0:
+        sys.stderr.write("Error: No input files.\n")
+    elif len(infiles) == 1:
+        assert args.output, "No output file given. [-o]"
+        json2graph(infiles[0], args.output, args.format,
+                   filter_atoms, new_author)
