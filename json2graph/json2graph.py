@@ -322,10 +322,33 @@ def json2graph(inpath: str, outpath: str, informat: str, author=None,
     graph.preprocessing(preprocess).write(outpath, author)
 
 
+def print_banner():
+    """
+    Print the json2graph banner.
+
+    :return: Nothing.
+    """
+    if "TERM" in os.environ and "color" in os.environ["TERM"]:
+        print(r"""[38;5;93m    [38;5;99m   _[38;5;63m     [38;5;69m    [38;5;33m    [38;5;39m    _[38;5;38m__  [38;5;44m    [38;5;43m     [38;5;49m    [38;5;48m    [38;5;84m     [38;5;83m  __[38;5;119m
+[38;5;93m   [38;5;99m   (_[38;5;63m)___[38;5;69m____[38;5;33m_  __[38;5;39m__ |[38;5;38m__ \[38;5;44m ____[38;5;43m ___[38;5;49m_____[38;5;48m__ _[38;5;84m____[38;5;83m  / /[38;5;119m
+[38;5;93m   [38;5;99m  / [38;5;63m/ ___[38;5;69m/ __[38;5;33m \/ [38;5;39m__ \_[38;5;38m_/ /[38;5;44m/ __[38;5;43m `/ _[38;5;49m__/ [38;5;48m__ `[38;5;84m/ __ [38;5;83m\/ _[38;5;119m_ \
+[38;5;93m   [38;5;99m / ([38;5;63m__  [38;5;69m) /_/[38;5;33m / /[38;5;39m / /[38;5;38m __//[38;5;44m /_/[38;5;43m / /[38;5;49m  / /[38;5;48m_/ /[38;5;84m /_/[38;5;83m / / [38;5;119m/ /
+[38;5;93m _[38;5;99m_/ /[38;5;63m____/[38;5;69m\___[38;5;33m_/_/[38;5;39m /_/_[38;5;38m___/[38;5;44m\__, [38;5;43m/_/ [38;5;49m  \_[38;5;48m_,_/ [38;5;84m.___[38;5;83m/_/ [38;5;119m/_/
+[38;5;93m/_[38;5;99m__/ [38;5;63m    [38;5;69m     [38;5;33m    [38;5;39m    [38;5;38m    /[38;5;44m____[38;5;43m/   [38;5;49m     [38;5;48m  /_[38;5;84m/   [38;5;83m     [38;5;119m
+
+[0m""")
+    else:
+        print(r"""       _                 ___                          __
+      (_)________  ____ |__ \ ____ __________ _____  / /_
+     / / ___/ __ \/ __ \__/ // __ `/ ___/ __ `/ __ \/ __ \
+    / (__  ) /_/ / / / / __// /_/ / /  / /_/ / /_/ / / / /
+ __/ /____/\____/_/ /_/____/\__, /_/   \__,_/ .___/_/ /_/
+/___/                      /____/          /_/""")
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
-    ap.add_argument("-f", "--filter-atom", help="Filtered atom types (comma "
-                                                "separated)", default="")
+    ap.add_argument("-f", "--force", help="Overwrite existing files.",
+                    action="store_true")
     ap_out_selection = ap.add_mutually_exclusive_group(required=True)
     ap_out_selection.add_argument("-o", "--output", help="Output file")
     ap_out_selection.add_argument("-O", "--outpath", help="Output path")
@@ -339,6 +362,7 @@ if __name__ == '__main__':
                     help="Run a preprocessing step ("
                          + Preprocessing.names() + ")")
     ap.add_argument("input", metavar="INFILE", nargs="+", help="Input file(s)")
+    print_banner()
     args = ap.parse_args()
     new_author = args.author
     if args.no_author:
@@ -358,8 +382,9 @@ if __name__ == '__main__':
         for infile in infiles:
             next_outfile = os.path.join(outpath,
                                         os.path.basename(infile) + ".graph")
-            if os.path.exists(next_outfile):
-                sys.stderr.write("Error: File already exists: " + next_outfile)
+            if os.path.exists(next_outfile) and not args.force:
+                sys.stderr.write("Error: File already exists: " + next_outfile
+                                 + "\n")
                 continue
             json2graph(infile, next_outfile, args.format,
                        new_author, args.preprocess)
