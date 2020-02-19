@@ -217,6 +217,8 @@ class Graph:
         :param step_names: The steps (by name)
         :return: The graph after preprocessing.
         """
+        if not step_names:
+            return self
         g = self
         for step in step_names:
             g = g.preprocess(Preprocessing.get(step))
