@@ -97,6 +97,49 @@ class MyTestCase(unittest.TestCase):
         self.assertListEqual(expected_vertices, res.vertices)
         self.assertListEqual(expected_edges, res.edges)
 
+    def test_copy(self):
+        """
+        Test the copy function.
+
+        :return: Nothing
+        """
+        vertices = [("a", "a"), ("b", "b")]
+        edges = [("a", "b", "ab")]
+        graph = j2g.Graph(vertices, edges)
+        copy = graph.copy()
+        self.assertListEqual(vertices, copy.vertices)
+        self.assertListEqual(edges, copy.edges)
+        self.assertIsNot(vertices, copy.vertices)
+        self.assertIsNot(edges, copy.edges)
+
+    def test_degree(self):
+        """
+        Test the degree function.
+
+        :return: Nothing
+        """
+        deg_zero = ("z", "z")
+        deg_three = ("i2", "i2")
+        cycle = ("c", "c")
+        vertex = [
+            deg_zero,
+            ("i", "i"),
+            deg_three,
+            ("i3", "i3"),
+            ("i4", "i4"),
+            cycle
+        ]
+        edges = [
+            ("i", "i2", ""),
+            ("i2", "i3", ""),
+            ("i2", "i4", ""),
+            ("c", "c", "")
+        ]
+        graph = j2g.Graph(vertex, edges)
+        self.assertEqual(graph.degree(deg_zero), 0)
+        self.assertEqual(graph.degree(deg_three), 3)
+        self.assertEqual(graph.degree(cycle), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

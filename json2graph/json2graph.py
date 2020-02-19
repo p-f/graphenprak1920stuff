@@ -12,6 +12,7 @@ class Preprocessing(Enum):
     """
     COMPRESS_CH3 = "COMPRESS_CH3"
     REMOVE_H = "REMOVE_H"
+    REMOVE_H_ALL = "REMOVE_H_ALL"
 
     @classmethod
     def get(cls, name: str):
@@ -117,6 +118,24 @@ class Graph:
         return Graph(new_vertices, self.edges)\
             .filter_vertices(lambda x: x not in to_remove)
 
+    def copy(self):
+        """
+        Return a copy of this graph.
+
+        :return: A copy of this graph.
+        """
+        return Graph(self.vertices.copy(), self.edges.copy())
+
+    def degree(self, vertex):
+        """
+        Get the degree of a vertex.
+
+        :param vertex: The vertex.
+        :return: The degree of that vertex.
+        """
+        return len(set([e for e in self.edges if e[0] == vertex[0] or
+                       e[1] == vertex[0]]))
+
     def filter_vertices(self, vertex_filter):
         """
         Apply a filter to the list of vertices.
@@ -184,6 +203,8 @@ class Graph:
                 lambda x: x[1] not in remove_atoms or
                           (x[1] in remove_atoms and
                            self.have_neighbors_multibonds(x)))
+        elif step == Preprocessing.REMOVE_H_ALL:
+            return self.filter_vertices(lambda x: x[1] not in remove_atoms)
         elif step == Preprocessing.COMPRESS_CH3:
             return self.compress_ch3()
         else:
