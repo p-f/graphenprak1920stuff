@@ -388,7 +388,6 @@ if __name__ == '__main__':
     new_author = args.author
     if args.no_author:
         new_author = None
-    filter_atoms = args.filter_atom.split(",")
     infiles = args.input
     if len(infiles) > 1 or args.outpath:
         if args.output:
