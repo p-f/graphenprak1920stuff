@@ -5,12 +5,14 @@ import sys
 
 from enum import Enum, unique
 
+
 @unique
 class Preprocessing(Enum):
     """
     An enum used to select preprocessing steps.
     """
     COMPRESS_CH3 = "COMPRESS_CH3"
+    GET_CONSENSUS = "GET_CONSENSUS"
     REMOVE_H = "REMOVE_H"
     REMOVE_H_ALL = "REMOVE_H_ALL"
 
@@ -41,20 +43,17 @@ class Graph:
     A graph storing lists of labeled vertices and edges
     """
 
-    def __init__(self):
-        """
-        Create a new empty graph
-        """
-        self.vertices = []
-        self.edges = []
-
-    def __init__(self, vertices, edges):
+    def __init__(self, vertices=None, edges=None):
         """
         Create a new graph from lists of vertices and edges.
 
         :param vertices: A list of vertices.
         :param edges: A list of edges.
         """
+        if vertices is None:
+            vertices = []
+        if edges is None:
+            edges = []
         self.vertices = vertices
         self.edges = edges
 
@@ -146,13 +145,38 @@ class Graph:
         self.vertices = list(filter(vertex_filter, self.vertices))
         return self.induced_subgraph()
 
+    def get_consesus(self):
+        """
+        Get the consensus of an aligned graph.
+        This will find the most common vertex label for each aligned vertex.
+        This expects an output as used by multiVitamin.
+
+        :return: The consensus graph.
+        """
+        new_vertices = []
+        for v in self.vertices:
+            labels = v[1].split(" ")
+            label_counts = dict()
+            for l in labels:
+                if l in label_counts:
+                    label_counts[l] += 1
+                else:
+                    label_counts[l] = 1
+            new_label = ""
+            new_count = 0
+            for label in label_counts:
+                if new_count < label_counts[label]:
+                    new_label = label
+                    new_count = label_counts[label]
+            new_vertices += [(v[0], new_label if new_label != "" else "0")]
+        return Graph(new_vertices, self.edges)
+
+
     def induced_subgraph(self):
         """
         Returns an induced subgraph from a set of vertices and edges. This will
         effectively remove dangling edges.
 
-        :param vertices: The vertex set.
-        :param edges: The edge set.
         :return: The induced subgraph.
         """
         vertex_ids = sorted(map(lambda x: x[0], self.vertices))
@@ -207,6 +231,8 @@ class Graph:
             return self.filter_vertices(lambda x: x[1] not in remove_atoms)
         elif step == Preprocessing.COMPRESS_CH3:
             return self.compress_ch3()
+        elif step == Preprocessing.GET_CONSENSUS:
+            return self.get_consesus()
         else:
             raise Exception("Unknown step: " + str(step))
 
@@ -257,6 +283,7 @@ class Graph:
         author = None
         vertex_count = None
         edge_count = None
+        edges_labeled = None
         line: str = infile.readline()
         state = 1
         while line:
@@ -275,8 +302,7 @@ class Graph:
                     if not bool(line.split(";")[1]):
                         raise Exception("Unlabelled nodes are not supported")
                 elif line.startswith("Edges labelled;"):
-                    if not bool(line.split()):
-                        raise Exception("Unlabelled edges are not supported")
+                    edges_labeled = bool(line.split())
                 elif line.startswith("Directed graph"):
                     pass
                 elif line == "":
@@ -300,10 +326,12 @@ class Graph:
             elif state == 4:
                 # Edges
                 data = line.split(";")
-                if len(data) != 3:
+                if (edges_labeled and len(data) != 3) or\
+                        (not edges_labeled and len(data) != 2):
                     raise Exception("Failed to parse edge: " + line)
                 else:
-                    edges += [(data[0], data[1], data[2])]
+                    edges += [(data[0], data[1],
+                               data[2] if edges_labeled else "")]
             line = infile.readline()
         infile.close()
         return Graph(vertices, edges)
@@ -339,7 +367,7 @@ class Graph:
 
 
 def json2graph(inpath: str, outpath: str, informat: str, author=None,
-               preprocess = []):
+               preprocess = None):
     print("Converting ", inpath, "to", outpath)
     graph = Graph.read_graph(inpath, informat)
     graph.preprocessing(preprocess).write(outpath, author)
@@ -367,6 +395,7 @@ def print_banner():
     / (__  ) /_/ / / / / __// /_/ / /  / /_/ / /_/ / / / /
  __/ /____/\____/_/ /_/____/\__, /_/   \__,_/ .___/_/ /_/
 /___/                      /____/          /_/""")
+
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()

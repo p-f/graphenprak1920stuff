@@ -140,6 +140,24 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(graph.degree(deg_three), 3)
         self.assertEqual(graph.degree(cycle), 1)
 
+    def test_get_consensus(self):
+        vertices = [
+            ("1", "C C O"),
+            ("2", "F"),
+            ("3", "")
+        ]
+        edges = [
+            ("1", "2", ""),
+            ("2", "3", "")
+        ]
+        expected_vertices = [
+            ("1", "C"),
+            ("2", "F"),
+            ("3", "0")
+        ]
+        graph = j2g.Graph(vertices, edges)
+        self.assertListEqual(graph.get_consesus().vertices, expected_vertices)
+
 
 if __name__ == '__main__':
     unittest.main()
