@@ -1,0 +1,12 @@
+This repository contains tools used and developed during the "Graphen und biologische Netze" Praktikum
+at Leipzig University in the Winter Semester of 2019/2020.
+
+
+The json2graph tool is used to convert biological molecules from PubChem JSON format to a custom .graph
+format used by alignment tools used during the Praktikum:
+ - https://github.com/Tschichen/MIGRAINE
+ - https://github.com/mk36fyvy/multivitamin
+
+
+The tools provides some preprocessing steps that may be used to reduce data size. All features are to
+be considered experimental.

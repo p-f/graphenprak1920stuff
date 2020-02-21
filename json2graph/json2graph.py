@@ -302,7 +302,7 @@ class Graph:
                     if not bool(line.split(";")[1]):
                         raise Exception("Unlabelled nodes are not supported")
                 elif line.startswith("Edges labelled;"):
-                    edges_labeled = bool(line.split())
+                    edges_labeled = not (line.split(";")[1] == "False")
                 elif line.startswith("Directed graph"):
                     pass
                 elif line == "":
